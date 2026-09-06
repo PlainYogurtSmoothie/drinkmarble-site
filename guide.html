@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>스트리머 가이드 · DrinkMarble</title>
+<link rel="stylesheet" href="site.css" />
+</head>
+<body>
+<nav class="top">
+  <a class="brand" href="index.html">🎲 DrinkMarble</a>
+  <a href="demo.html">데모</a><a href="guide.html" class="active">가이드</a><a href="privacy.html">개인정보처리방침</a>
+  <a class="ext" href="https://github.com/PlainYogurtSmoothie/drinkmarble-site" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<main class="wrap">
+  <h1>스트리머 가이드</h1>
+  <p class="lead">방송에서 주루마블을 진행하는 순서와 채팅 명령, 후원 규칙 설정을 정리했습니다. 서비스 공개 전 안내라 세부 화면은 바뀔 수 있습니다.</p>
+
+  <h2>1. 준비</h2>
+  <div class="steps">
+    <div class="step"><b>로그인</b><br />치지직 또는 씨미 계정으로 로그인하면 관리 페이지와 오버레이 주소가 생깁니다. SOOP은 관리 페이지에서 채팅 연결 버튼을 누릅니다.</div>
+    <div class="step"><b>OBS에 오버레이 추가</b><br />브라우저 소스 → URL에 오버레이 주소 붙이기 → 크기 1280×760 권장. 테마는 주소 뒤에 <code>?theme=neon</code> 처럼 붙입니다.</div>
+    <div class="step"><b>판과 주사위 고르기</b><br />관리 페이지에서 프리셋을 고르거나 보드를 편집합니다. "보드만 적용"을 쓰면 규칙·주사위는 그대로 두고 판만 바뀝니다.</div>
+  </div>
+
+  <h2>2. 진행</h2>
+  <p>시청자가 <code>!참가</code>로 들어오고, 첫 굴림이 곧 시작입니다. 순서제에서는 자기 차례에만 <code>!주사위</code>가 먹고, 자유 모드에서는 각자 쿨다운마다 굴릴 수 있습니다. 관리 페이지의 큰 버튼으로 스트리머가 대신 굴릴 수도 있습니다.</p>
+
+  <h3>시청자 명령</h3>
+  <table class="t">
+    <tr><th>명령</th><th>동작</th></tr>
+    <tr><td><code>!참가 [팀]</code></td><td>참가. 팀전이면 팀 이름 지정</td></tr>
+    <tr><td><code>!주사위</code> <code>!굴려</code></td><td>주사위 굴리기 (룰렛 모드면 추첨)</td></tr>
+    <tr><td><code>!내위치</code></td><td>내 위치, 마신 잔, 면제권, 대기 벌칙</td></tr>
+    <tr><td><code>!면제권</code></td><td>면제권 1개 사용. 키핑 모드면 대기 벌칙 하나 면제</td></tr>
+    <tr><td><code>!벌칙</code> / <code>!완료</code></td><td>내 대기 벌칙 보기 / 가장 오래된 것 완료</td></tr>
+    <tr><td><code>!지목 닉네임</code></td><td>내가 받은 지목샷의 대상 정하기</td></tr>
+    <tr><td><code>!순위</code></td><td>잔 수 순위 상위 5명</td></tr>
+    <tr><td><code>!나가기</code></td><td>퇴장</td></tr>
+  </table>
+
+  <h3>스트리머·매니저 명령</h3>
+  <table class="t">
+    <tr><th>명령</th><th>동작</th></tr>
+    <tr><td><code>!시작</code> <code>!일시정지</code> <code>!재개</code> <code>!종료 [사유]</code></td><td>게임 진행 상태</td></tr>
+    <tr><td><code>!다음</code></td><td>다음 차례로 (방치 시)</td></tr>
+    <tr><td><code>!굴려 닉네임</code></td><td>특정 말 대신 굴리기 (차례는 안 넘어감)</td></tr>
+    <tr><td><code>!완료 닉네임</code> · <code>!지목 번호 닉네임</code></td><td>벌칙 처리</td></tr>
+    <tr><td><code>!되돌리기</code></td><td>마지막 동작 취소</td></tr>
+    <tr><td><code>!주사위설정 1d20</code></td><td>주사위 조합 변경 (1개면 더블 규칙 자동 해제)</td></tr>
+    <tr><td><code>!프리셋 이름 [보드만]</code></td><td>보드 프리셋 적용</td></tr>
+    <tr><td><code>!설정 키 값</code></td><td>규칙 변경. 예: <code>!설정 penaltyMode queue</code></td></tr>
+    <tr><td><code>!추가 이름</code> · <code>!강퇴 닉네임</code> · <code>!초기화</code></td><td>게스트 추가 · 퇴장 · 초기화</td></tr>
+  </table>
+
+  <h2>3. 후원 규칙</h2>
+  <p>위에서부터 첫 번째로 맞는 규칙이 실행됩니다. 정확히 일치·키워드 규칙을 먼저 두고 "이상" 규칙을 마지막에 두세요.</p>
+  <table class="t">
+    <tr><th>매칭</th><th>예</th><th>설명</th></tr>
+    <tr><td>정확히 (exact)</td><td>3,000원 → 뒤로 3칸</td><td>금액이 딱 맞을 때만</td></tr>
+    <tr><td>키워드 (keyword)</td><td>"!방패" 포함 → 면제권</td><td>후원 메시지에 단어가 있을 때. 최소 금액 지정 가능</td></tr>
+    <tr><td>이상 (min)</td><td>1,000원 이상 → 주사위, 배수만큼 반복</td><td>포괄 규칙. 최대 연속 횟수 제한</td></tr>
+  </table>
+  <p class="muted" style="font-size:14px">액션: 굴림, 이동(±칸), 순간이동, 건배(대상 지정), 면제권 선물, 자리 교환, 순서 역방향, 턴 쉬기. 대상은 현재 차례 · 후원자 · 무작위 · 전체 · 지목 중 선택. 1인 하루 한도와 간격, 익명 후원 허용 여부를 따로 정합니다.</p>
+
+  <h2>4. 벌칙 처리</h2>
+  <p><b>즉시 집계</b>는 칸에 도착하는 순간 잔 수가 올라갑니다. <b>키핑(큐)</b>은 벌칙이 대기열에 쌓이고 실제로 마신 뒤 <code>!완료</code>나 관리 페이지 버튼으로 처리해야 집계됩니다. 지목샷은 두 모드 모두 대상이 정해질 때까지 대기열에 남습니다. 면제권은 대기 벌칙 하나를 없앱니다.</p>
+
+  <h2>5. 서로 켜지지 않는 규칙</h2>
+  <table class="t">
+    <tr><th>조합</th><th>이유</th></tr>
+    <tr><td>룰렛 + 땅 소유</td><td>룰렛에는 위치가 없음</td></tr>
+    <tr><td>룰렛 + 더블 3연속 무인도 / 완주 종료</td><td>이동·완주 개념이 없음</td></tr>
+    <tr><td>자유 모드 + 방치 타이머 / 더블 규칙</td><td>차례가 없음</td></tr>
+    <tr><td>주사위 1개 + 더블 규칙</td><td>더블이 나올 수 없음</td></tr>
+  </table>
+  <p class="muted" style="font-size:14px">이런 조합을 저장하려 하면 설정이 거절되고 이유가 표시됩니다. 프리셋에는 맞는 조합이 들어 있어 그대로 적용하면 충돌이 없습니다.</p>
+
+  <h2>6. 방송 종료 시</h2>
+  <p>방송이 꺼지면 게임이 자동 일시정지되고 상태가 보관됩니다. 설정한 시간(기본 2시간) 안에 다시 방송하면 이어서 진행되고, 지나면 게임과 참가자 정보가 정리됩니다. 오프라인 술자리처럼 플랫폼 연결 없이 관리 페이지만으로 진행하는 것도 가능합니다.</p>
+</main>
+
+<footer class="foot">DrinkMarble · <a href="privacy.html">개인정보처리방침</a> · <a href="mailto:contact@plainyogurtsmoothie.dev">contact@plainyogurtsmoothie.dev</a></footer>
+</body>
+</html>

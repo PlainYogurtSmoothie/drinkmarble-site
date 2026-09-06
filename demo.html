@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>데모 · DrinkMarble</title>
+<link rel="stylesheet" href="site.css" />
+<style>
+  .demo { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+  @media (max-width: 960px) { .demo { grid-template-columns: 1fr; } }
+  #board { display: grid; gap: 5px; --n: 7; --t: 80px; grid-template-columns: repeat(var(--n), var(--t)); grid-auto-rows: var(--t); justify-content: center; }
+  .tile { background: #1e1e2e; border: 2px solid #3a3a55; border-radius: 9px; padding: 5px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; color: #f2f2f8; transition: transform .15s, box-shadow .15s; }
+  .tile .idx { font-size: 9px; color: #9a9ab5; } .tile .name { font-weight: 700; font-size: 11.5px; line-height: 1.15; }
+  .tile.DRINK { border-color: #ff6b6b } .tile.MISSION { border-color: #4ecdc4 } .tile.GOLDEN_KEY { border-color: #ffd166; background: #2a2415 } .tile.JAIL { border-color: #8d99ae } .tile.SAFE { border-color: #7ae582 } .tile.MOVE { border-color: #b39ddb } .tile.START { border-color: #fff; background: #26263a }
+  .tile.landed { transform: scale(1.06); box-shadow: 0 0 16px #ffd166; z-index: 2 } .tile.step { box-shadow: 0 0 10px #ffd166 inset }
+  .pieces { display: flex; flex-wrap: wrap; gap: 2px } .piece { width: 15px; height: 15px; border-radius: 50%; border: 2px solid #fff; font-size: 8px; font-weight: 800; color: #111; display: grid; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.6) } .piece.current { outline: 2px solid #ffd166; outline-offset: 1px }
+  #center { grid-column: 2 / calc(var(--n)); grid-row: 2 / calc(var(--n)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; color: #f2f2f8; padding: 8px }
+  .die { width: 48px; height: 48px; border-radius: 10px; background: #fff; color: #111; display: grid; place-items: center; font-size: 26px; font-weight: 900; box-shadow: 0 4px 10px rgba(0,0,0,.5) } .die.rolling { animation: shake .5s infinite } #diceView { display: flex; gap: 8px; min-height: 48px }
+  @keyframes shake { 0%{transform:rotate(-8deg)} 50%{transform:rotate(8deg)} 100%{transform:rotate(-8deg)} }
+  #result { font-size: 14px; font-weight: 700 } #result small { display: block; font-weight: 500; color: #9a9ab5; font-size: 12px; margin-top: 3px }
+  .boardwrap { background: #12121c; border-radius: 14px; padding: 14px; overflow-x: auto }
+  .side .card { margin-bottom: 12px }
+  .player { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 14px } .player:last-child { border-bottom: 0 }
+  .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; flex: none; box-shadow: 0 0 0 1px #0002 } .player .nm { flex: 1 } .player.current .nm { color: var(--accent-dark); font-weight: 700 } .player .st { color: var(--muted); font-size: 12px }
+  .pen { font-size: 13px; padding: 4px 0; display: flex; gap: 6px; align-items: center; border-bottom: 1px solid var(--line) } .pen:last-child { border-bottom: 0 } .pen .who { font-weight: 700; min-width: 54px } .pen.unassigned .who { color: #d33 }
+  .log { font-size: 12px; color: var(--muted); max-height: 180px; overflow: auto } .log div { padding: 2px 0 }
+  .chat { display: flex; gap: 6px } .chat input { flex: 1; min-width: 0 }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
+  label.f { color: var(--muted); font-size: 13px; min-width: 70px }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 13px } .kv b { color: var(--accent-dark) }
+</style>
+</head>
+<body>
+<nav class="top">
+  <a class="brand" href="index.html">🎲 DrinkMarble</a>
+  <a href="demo.html" class="active">데모</a><a href="guide.html">가이드</a><a href="privacy.html">개인정보처리방침</a>
+  <a class="ext" href="https://github.com/PlainYogurtSmoothie/drinkmarble-site" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<main class="wrap">
+  <h1>브라우저 데모</h1>
+  <p class="lead">실제 서비스와 같은 게임 엔진이 이 페이지 안에서 돌아갑니다. 서버·계정 없이 규칙과 진행 방식을 미리 볼 수 있습니다. 채팅 입력칸에 <code>!참가</code>, <code>!주사위</code>를 쳐 보세요.</p>
+
+  <div class="demo">
+    <div>
+      <div class="boardwrap"><div id="board"></div></div>
+      <div class="card" style="margin-top:12px">
+        <div class="row">
+          <label class="f">프리셋</label><select id="preset"></select>
+          <label class="f">주사위</label><select id="dice"><option>2d6</option><option>1d6</option><option>1d12</option><option>1d20</option><option>2d12</option><option>3d6</option></select>
+          <label class="f">벌칙</label><select id="penalty"><option value="instant">즉시 집계</option><option value="queue">큐(키핑)</option></select>
+          <label class="f">종료</label><select id="end"><option value="none">수동</option><option value="rounds">5라운드</option><option value="drinks">5잔</option></select>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="roll">🎲 현재 차례 굴리기</button>
+          <button class="btn" id="next">다음 차례</button>
+          <button class="btn" id="undo">↩ 되돌리기</button>
+          <button class="btn" id="reset">↺ 초기화</button>
+          <button class="btn" id="auto">▶ 자동 진행</button>
+          <span class="muted" id="status"></span>
+        </div>
+        <div class="row chat">
+          <select id="who"></select>
+          <input id="msg" placeholder="채팅처럼 입력: !참가 / !주사위 / !내위치 / !벌칙 / !완료 / !순위" />
+          <button class="btn" id="send">보내기</button>
+        </div>
+        <div class="row"><span class="muted" style="font-size:13px">후원 흉내:</span><input id="amt" type="number" value="1000" style="width:90px" /><button class="btn" id="donate">후원 보내기</button><span class="muted" style="font-size:12px">1,000원마다 주사위 1회 (최대 3회)</span></div>
+        <div id="reply" class="muted" style="font-size:13px;min-height:18px"></div>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="card"><h3>플레이어 <span class="muted" id="round"></span></h3><div id="players"></div>
+        <div class="row" style="margin-top:8px"><input id="newName" placeholder="이름" style="width:110px" /><button class="btn" id="add">참가</button></div></div>
+      <div class="card" id="penCard"><h3>벌칙 대기 <span class="muted" id="penCount"></span></h3><div id="pens"></div></div>
+      <div class="card"><h3>기록</h3><div class="log" id="log"></div></div>
+      <div class="card"><h3>이 데모에서 빠진 것</h3>
+        <div class="kv"><b>플랫폼</b><span>치지직·씨미·SOOP 실제 채팅·후원 연결</span><b>OBS</b><span>방송 화면용 오버레이 페이지</span><b>편집기</b><span>보드·황금열쇠 시각 편집, 후원 규칙 편집</span><b>저장</b><span>새로고침하면 초기화 (실제 서비스는 자동 저장)</span></div>
+        <p class="muted" style="font-size:12px;margin:8px 0 0">엔진 버전: <span id="ver">-</span></p></div>
+    </aside>
+  </div>
+</main>
+<footer class="foot">DrinkMarble · <a href="privacy.html">개인정보처리방침</a> · <a href="mailto:contact@plainyogurtsmoothie.dev">contact@plainyogurtsmoothie.dev</a></footer>
+
+<script type="module">
+import { GameEngine, GameError } from './lib/game/engine.js';
+import { builtinPresets } from './lib/game/presets.js';
+import { parseDiceSpec } from './lib/game/settings.js';
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const presets = builtinPresets();
+let game = new GameEngine({ settings: { rollCooldownSec: 0 }, timersEnabled: false });
+let animating = false, autoTimer = null;
+const animPos = new Map();
+
+fetch('lib/game/VERSION').then((r) => r.text()).then((t) => { $('#ver').textContent = t.trim(); }).catch(() => {});
+
+// ---------- 채팅 명령 (서버의 commands.js 를 데모용으로 축약) ----------
+function handleChat(who, text) {
+  const t = text.trim();
+  if (!t.startsWith('!')) return '명령은 ! 로 시작합니다';
+  const [c, ...args] = t.slice(1).split(/\s+/);
+  const id = `demo:${who}`;
+  try {
+    switch (c) {
+      case '참가': { const p = game.addPlayer({ id, name: who, platform: 'demo' }); return `${p.name} 참가! (${game.playerCount}/${game.settings.maxPlayers})`; }
+      case '주사위': case '굴려': { if (!game.getPlayer(id)) return '먼저 !참가'; return fmt(roll(id, {})); }
+      case '내위치': { const p = game.getPlayer(id); if (!p) return '참가 중이 아님'; return `${p.name}: ${p.position}번 [${game.board[p.position].name}] / ${p.drinks}잔 / 면제권 ${p.passes}`; }
+      case '면제권': { const p = game.usePass(id); return `${p.name} 면제권 사용 (남은 ${p.passes})`; }
+      case '벌칙': { const l = game.penalties.filter((x) => x.status === 'pending' && (x.playerId === id || (!x.playerId && x.sourceId === id))); return l.length ? l.map((x) => `#${x.id} ${x.playerName ?? '지목 대기'} ${x.text} ${x.amount}잔`).join(' | ') : '대기 벌칙 없음'; }
+      case '완료': { const pen = game.pendingPenalties(id)[0]; if (!pen) return '완료할 벌칙 없음'; game.completePenalty(pen.id); return `✅ ${pen.playerName} ${pen.text} ${pen.amount}잔 완료`; }
+      case '지목': { const pen = game.penalties.find((x) => x.status === 'pending' && !x.playerId && x.sourceId === id); if (!pen) return '지목 대기 벌칙 없음'; const tg = game.findPlayerByName(args.join(' ')); if (!tg) return `'${args.join(' ')}' 없음`; game.assignPenalty(pen.id, tg.id); return `${pen.sourceName} → ${tg.name} 지목!`; }
+      case '순위': return game.leaderboard().slice(0, 5).map((p) => `${p.rank}위 ${p.name} 🍺${p.drinks}`).join(' | ') || '참가자 없음';
+      case '다음': { const p = game.nextTurn(); return p ? `다음 차례: ${p.name}` : '없음'; }
+      case '되돌리기': game.undo(); return '↩ 되돌림';
+      case '종료': { const s = game.end(args.join(' ') || '수동 종료'); return `🏁 종료 · 총 ${s.totalDrinks}잔 · 1위 ${s.most?.name ?? '-'}`; }
+      default: return `알 수 없는 명령: !${c}`;
+    }
+  } catch (e) { if (e instanceof GameError) return `⚠ ${e.message}`; throw e; }
+}
+const fmt = (r) => `${r.playerName} ${r.dice.length ? `🎲 ${r.dice.join('+')}=${r.total} → ` : '🎡 '}[${r.tile.name}] ${r.summary}${r.extraTurn ? ' (더블! 한 번 더)' : ''}`;
+
+function roll(id, opts) { const r = game.roll(id, opts); showRoll(r); return r; }
+
+// ---------- 렌더 ----------
+function ringCoords(len) {
+  const n = Math.max(3, Math.ceil(len / 4) + 1), coords = [];
+  for (let i = 0; i < len; i++) { const side = Math.floor(i / (n - 1)), k = i % (n - 1); let r, c;
+    if (side === 0) { r = n - 1; c = n - 1 - k; } else if (side === 1) { r = n - 1 - k; c = 0; } else if (side === 2) { r = 0; c = k; } else { r = k; c = n - 1; }
+    coords.push({ r: r + 1, c: c + 1 }); }
+  return { n, coords };
+}
+let boardKey = null;
+function renderBoard() {
+  const st = game.toJSON();
+  const key = JSON.stringify(st.board.map((t) => [t.name, t.type]));
+  if (key !== boardKey) {
+    boardKey = key;
+    const { n, coords } = ringCoords(st.board.length);
+    const b = $('#board'); b.style.setProperty('--n', n); b.style.setProperty('--t', n > 9 ? '64px' : n > 7 ? '72px' : '80px'); b.innerHTML = '';
+    st.board.forEach((t, i) => { const el = document.createElement('div'); el.className = `tile ${t.type}`; el.style.gridRow = coords[i].r; el.style.gridColumn = coords[i].c; el.dataset.idx = i;
+      el.innerHTML = `<div class="idx">${st.gameType === 'roulette' ? '' : i}</div><div class="name">${esc(t.name)}</div><div class="pieces"></div>`; b.appendChild(el); });
+    const c = document.createElement('div'); c.id = 'center'; c.innerHTML = `<div id="diceView"></div><div id="result">주사위를 굴려 보세요<small>!참가 → !주사위</small></div>`; b.appendChild(c);
+  }
+  renderPieces(st);
+}
+function renderPieces(st = game.toJSON()) {
+  document.querySelectorAll('.pieces').forEach((p) => (p.innerHTML = ''));
+  if (st.gameType !== 'roulette') for (const p of st.players) {
+    const pos = animPos.has(p.id) ? animPos.get(p.id) : p.position;
+    const h = document.querySelector(`.tile[data-idx="${pos}"] .pieces`); if (!h) continue;
+    const el = document.createElement('div'); el.className = 'piece' + (p.id === st.currentPlayerId ? ' current' : ''); el.style.background = p.color; el.textContent = p.name.slice(0, 1); el.title = p.name; h.appendChild(el);
+  }
+  const top = st.leaderboard?.[0]?.drinks > 0 ? st.leaderboard[0].id : null;
+  $('#players').innerHTML = st.players.map((p) => `<div class="player ${p.id === st.currentPlayerId ? 'current' : ''}"><span class="dot" style="background:${p.color}"></span><span class="nm">${p.id === top ? '🏆 ' : ''}${esc(p.name)}</span><span class="st">🍺${p.drinks} · 🎟${p.passes}${p.skipTurns ? ' · 💤' : ''}</span></div>`).join('') || '<div class="muted" style="font-size:13px">참가자 없음. 아래에서 추가하거나 채팅에 !참가</div>';
+  $('#round').textContent = `${st.round}R · ${{ lobby: '대기', playing: '진행', paused: '일시정지', ended: '종료' }[st.status]}`;
+  const pens = st.penalties; $('#penCard').style.display = pens.length ? '' : 'none'; $('#penCount').textContent = `${pens.length}건`;
+  $('#pens').innerHTML = pens.map((p) => `<div class="pen ${p.playerId ? '' : 'unassigned'}"><span class="who">${p.playerName ? esc(p.playerName) : '지목 대기'}</span><span style="flex:1">${esc(p.text)} ${p.amount}잔</span>${p.playerId ? `<button class="btn sm" data-done="${p.id}">완료</button>` : `<select data-assign="${p.id}"><option value="">지목…</option>${st.players.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('')}</select>`}</div>`).join('');
+  $('#pens').querySelectorAll('[data-done]').forEach((b) => (b.onclick = () => { game.completePenalty(b.dataset.done); }));
+  $('#pens').querySelectorAll('[data-assign]').forEach((s) => (s.onchange = () => s.value && game.assignPenalty(s.dataset.assign, s.value)));
+  $('#who').innerHTML = st.players.map((p) => `<option>${esc(p.name)}</option>`).join('') + '<option value="__new">새 시청자…</option>';
+  $('#log').innerHTML = st.history.slice(-30).reverse().map((h) => `<div>${esc(h.text)}</div>`).join('');
+  $('#status').textContent = st.status === 'ended' ? `🏁 ${st.endReason}` : '';
+  if (st.status === 'ended') { const r = $('#result'); if (r) r.innerHTML = `🏁 게임 종료<small>${esc(st.endReason)} · ` + st.leaderboard.slice(0, 3).map((p) => `${p.rank}위 ${esc(p.name)} ${p.drinks}잔`).join(' · ') + '</small>'; }
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function showRoll(r) {
+  const dice = $('#diceView'), res = $('#result'); if (!dice) return;
+  document.querySelectorAll('.tile.landed,.tile.step').forEach((t) => t.classList.remove('landed', 'step'));
+  animating = true;
+  if (r.dice.length) { dice.innerHTML = r.dice.map(() => '<div class="die rolling">?</div>').join(''); await sleep(450); dice.innerHTML = r.dice.map((d) => `<div class="die">${d}</div>`).join(''); }
+  else dice.innerHTML = '<div style="font-size:40px">🎡</div>';
+  if (r.gameType !== 'roulette' && r.total > 0 && r.total <= 60) {
+    const len = game.board.length; let pos = r.from;
+    for (let i = 0; i < r.total; i++) { pos = (pos + 1) % len; animPos.set(r.playerId, pos); document.querySelectorAll('.tile.step').forEach((t) => t.classList.remove('step')); document.querySelector(`.tile[data-idx="${pos}"]`)?.classList.add('step'); renderPieces(); await sleep(110); }
+    if (pos !== r.to) { await sleep(200); animPos.set(r.playerId, r.to); renderPieces(); await sleep(150); }
+  }
+  animPos.delete(r.playerId); animating = false;
+  document.querySelectorAll('.tile.step').forEach((t) => t.classList.remove('step'));
+  document.querySelector(`.tile[data-idx="${r.gameType === 'roulette' ? r.tile.id : r.to}"]`)?.classList.add('landed');
+  res.innerHTML = `${esc(r.playerName)} → <span style="color:#ffd166">${esc(r.tile.name)}</span>${r.extraTurn ? ' (더블!)' : ''}<small>${esc(r.summary)}</small>`;
+  renderPieces();
+}
+game.on('update', () => renderBoard());
+
+// ---------- 컨트롤 ----------
+$('#preset').innerHTML = Object.entries(presets).map(([k, p]) => `<option value="${k}">${esc(p.name)}</option>`).join('');
+function applyPreset(key) { const p = presets[key]; try { game.applySettings({ ...p.settings, rollCooldownSec: 0 }); } catch (e) { say(`⚠ ${e.message}`); } game.setBoard(p.tiles); if (p.cards) game.setCards(p.cards); const s = game.settings; $('#dice').value = s.gameType === 'roulette' ? '2d6' : `${s.diceCount}d${s.diceSides}`; }
+$('#preset').onchange = () => applyPreset($('#preset').value);
+$('#dice').onchange = () => { try { game.applySettings(parseDiceSpec($('#dice').value, game.settings)); say(`주사위 ${$('#dice').value}`); } catch (e) { say(`⚠ ${e.message}`); } };
+$('#penalty').onchange = () => game.applySettings({ penaltyMode: $('#penalty').value });
+$('#end').onchange = () => { const v = $('#end').value; game.applySettings(v === 'rounds' ? { endCondition: 'rounds', endRounds: 5 } : v === 'drinks' ? { endCondition: 'drinks', endDrinks: 5 } : { endCondition: 'none' }); };
+$('#roll').onclick = () => { const c = game.currentPlayer(); if (!c) return say('먼저 참가자를 추가하세요'); try { say(fmt(roll(c.id, { privileged: true }))); } catch (e) { say(`⚠ ${e.message}`); } };
+$('#next').onclick = () => { const p = game.nextTurn(); say(p ? `다음: ${p.name}` : '참가자 없음'); };
+$('#undo').onclick = () => { try { game.undo(); say('↩ 되돌림'); } catch (e) { say(`⚠ ${e.message}`); } };
+$('#reset').onclick = () => { stopAuto(); game.reset({ keepPlayers: true }); say('초기화'); };
+$('#add').onclick = () => { const n = $('#newName').value.trim() || `시청자${game.playerCount + 1}`; try { game.addPlayer({ id: `demo:${n}`, name: n, platform: 'demo' }); $('#newName').value = ''; } catch (e) { say(`⚠ ${e.message}`); } };
+$('#send').onclick = () => { let who = $('#who').value; if (who === '__new' || !who) who = prompt('시청자 닉네임', `시청자${game.playerCount + 1}`) || 'guest'; say(handleChat(who, $('#msg').value)); $('#msg').value = ''; };
+$('#msg').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#send').click(); });
+$('#donate').onclick = () => { const amt = Number($('#amt').value) || 0; const times = Math.min(3, Math.floor(amt / 1000)); if (!times) return say('1,000원 이상이어야 굴러갑니다'); const out = []; for (let i = 0; i < times; i++) { const c = game.currentPlayer(); if (!c) break; try { out.push(fmt(roll(c.id, { by: 'donation', privileged: true }))); } catch (e) { out.push(`⚠ ${e.message}`); break; } } say(`💰 ${amt.toLocaleString()}원 후원 → ${out.join(' / ') || '참가자 없음'}`); };
+function stopAuto() { clearInterval(autoTimer); autoTimer = null; $('#auto').textContent = '▶ 자동 진행'; }
+$('#auto').onclick = () => { if (autoTimer) return stopAuto(); if (!game.playerCount) return say('먼저 참가자를 추가하세요'); $('#auto').textContent = '⏸ 자동 진행 중'; autoTimer = setInterval(() => { if (animating) return; const c = game.currentPlayer(); if (!c || game.status === 'ended') return stopAuto(); try { roll(c.id, { privileged: true }); } catch { stopAuto(); } }, 2200); };
+function say(t) { $('#reply').textContent = t; }
+
+// 시작 상태: 참가자 3명
+for (const n of ['철수', '영희', '민수']) game.addPlayer({ id: `demo:${n}`, name: n, platform: 'demo' });
+renderBoard();
+</script>
+</body>
+</html>

@@ -86,9 +86,9 @@
 import { GameEngine, GameError } from './lib/game/engine.js';
 import { builtinPresets } from './lib/game/presets.js';
 import { parseDiceSpec } from './lib/game/settings.js';
+import { ringCoords, escapeHtml as esc, formatRoll as fmt } from './lib/game/format.js';
 
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const presets = builtinPresets();
 let game = new GameEngine({ settings: { rollCooldownSec: 0 }, timersEnabled: false });
 let animating = false, autoTimer = null;
@@ -119,18 +119,9 @@ function handleChat(who, text) {
     }
   } catch (e) { if (e instanceof GameError) return `⚠ ${e.message}`; throw e; }
 }
-const fmt = (r) => `${r.playerName} ${r.dice.length ? `🎲 ${r.dice.join('+')}=${r.total} → ` : '🎡 '}[${r.tile.name}] ${r.summary}${r.extraTurn ? ' (더블! 한 번 더)' : ''}`;
-
 function roll(id, opts) { const r = game.roll(id, opts); showRoll(r); return r; }
 
-// ---------- 렌더 ----------
-function ringCoords(len) {
-  const n = Math.max(3, Math.ceil(len / 4) + 1), coords = [];
-  for (let i = 0; i < len; i++) { const side = Math.floor(i / (n - 1)), k = i % (n - 1); let r, c;
-    if (side === 0) { r = n - 1; c = n - 1 - k; } else if (side === 1) { r = n - 1 - k; c = 0; } else if (side === 2) { r = 0; c = k; } else { r = k; c = n - 1; }
-    coords.push({ r: r + 1, c: c + 1 }); }
-  return { n, coords };
-}
+// ---------- 렌더 (ringCoords/esc/fmt 는 lib/game/format.js 공용) ----------
 let boardKey = null;
 function renderBoard() {
   const st = game.toJSON();
